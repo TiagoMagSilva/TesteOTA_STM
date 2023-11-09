@@ -1,4 +1,4 @@
 {
-"link": "https://raw.githubusercontent.com/TiagoMagSilva/TesteOTA_STM/main/STM_BIN/blink_3.bin",
+"link": "https://raw.githubusercontent.com/TiagoMagSilva/TesteOTA_STM/main/STM_BIN/blink_4.bin",
 "Mandatory": false
 }
