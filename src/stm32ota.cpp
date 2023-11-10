@@ -1,6 +1,6 @@
 #include "stm32ota.h"
 String bin_file_name;
-const String STM32_CHIPNAME[8] = {
+const String STM32_CHIPNAME[9] = {
   "Unknown Chip",
   "STM32F03xx4/6",
   "STM32F030x8/05x",
@@ -8,14 +8,15 @@ const String STM32_CHIPNAME[8] = {
   "STM32F103x4/6",
   "STM32F103x8/B",
   "STM32F103xC/D/E",
-  "STM32F105/107"
+  "STM32F105/107",
+  "STM32F411xx"
 };
 
 char rx_buffer[64];
 int bytes_buffer;
 
 stm32ota::stm32ota(int _NRST, int _BOOT0, int _LED) {
-
+  SerialPC.println("Configurando BOOT RS LED");
   this->pin_BOOT0 = _BOOT0;
   this->pin_LED = _LED;
   this->pin_NRST = _NRST;
@@ -29,6 +30,7 @@ String stm32ota::conect() {
 
   String stringtmp;
   int rdtmp;
+  SerialPC.println("Connecting");
   delay(100);
   digitalWrite(pin_BOOT0, HIGH);
   delay(100);
@@ -44,7 +46,7 @@ String stm32ota::conect() {
 
   SerialESP.write(STM32INIT);
   delay(10);
-  if (SerialESP.available() > 0)
+  if (SerialESP.baudRate() > 0)
     ;
   rdtmp = SerialESP.read();
   if (rdtmp == STM32ACK) {
@@ -67,6 +69,7 @@ String stm32ota::conect() {
 unsigned char stm32ota::GetId() {  //
   int getid = 0;
   unsigned char sbuf[5];
+  SerialPC.println("Getting ID");
   SendCommand(STM32ID);
   while (!SerialESP.available())
     ;
@@ -75,6 +78,8 @@ unsigned char stm32ota::GetId() {  //
     SerialESP.readBytesUntil(STM32ACK, sbuf, 4);
     getid = sbuf[1];
     getid = (getid << 8) + sbuf[2];
+    SerialPC.print("Device ID: ");
+    SerialPC.println(getid,HEX);
     if (getid == 0x444)
       return 1;
     if (getid == 0x440)
@@ -89,6 +94,8 @@ unsigned char stm32ota::GetId() {  //
       return 6;
     if (getid == 0x418)
       return 7;
+    if (getid == 0x431)
+      return 8;
   } else return 0;
 
   return 0;
@@ -141,7 +148,7 @@ boolean stm32ota::Flash(String bin_file_name) {
   File fsUploadFile;
   boolean flashwr;
   int lastbuf = 0;
-  uint8_t cflag, fnum = 256;
+  uint8_t cflag;
   int bini = 0;
   uint8_t binread[256];
 
@@ -265,7 +272,7 @@ unsigned char stm32ota::getChecksum(unsigned char* data, unsigned char datalen) 
 
 //----------------------------------------------------------------------------------
 void stm32ota::deletfiles(String bin_file) {
-  Dir dir = SPIFFS.openDir("/");
+  File dir = SPIFFS.open("/");
   if (SPIFFS.exists(bin_file)) {
     SPIFFS.remove(bin_file);
   }
@@ -290,6 +297,17 @@ void stm32ota::RunMode() {  //Tested  Change to runmode
   }
 }
 //----------------------------------------------------------------------------------
+void stm32ota::ConfigPins(int _NRST, int _BOOT0, int _LED){
+  SerialPC.println("Configurando BOOT RS LED");
+  this->pin_BOOT0 = _BOOT0;
+  this->pin_LED = _LED;
+  this->pin_NRST = _NRST;
+  pinMode(_BOOT0, OUTPUT);
+  pinMode(_NRST, OUTPUT);
+  pinMode(_LED, OUTPUT);
+  digitalWrite(_NRST, HIGH);
+}
+//----------------------------------------------------------------------------------
 char stm32ota::chipVersion() {  // Tested
   unsigned char vsbuf[14];
   SendCommand(STM32GET);
@@ -304,25 +322,36 @@ char stm32ota::chipVersion() {  // Tested
   }
 }
 //----------------------------------------------------------------------------------
-String stm32ota::otaUpdate(String File_Url) {
+String stm32ota::otaUpdate(String File_Url) 
+{
+  SerialPC.println("Updating");
   String aux = "";
-  if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+  if (WiFi.waitForConnectResult() == WL_CONNECTED) 
+  {
 
-    if (downloadFile(File_Url, "stm32.bin")) {
+    if (downloadFile(File_Url, "stm32.bin")) 
+    {
       //printfiles();
       String aux = conect();
-      if (aux != "ERROR") {
+      if (aux != "ERROR") 
+      {
         EraseChip();
         Flash("/stm32.bin");
         RunMode();
         deletfiles("/stm32.bin");
-      } else {
+      } 
+      else 
+      {
         return "Unknown Chip";
       }
-    } else {
+    } 
+    else 
+    {
       return "Download Fail";
     }
-  } else {
+  } 
+  else 
+  {
     return "WiFi not conected";
   }
   return "Update OK";

@@ -1,11 +1,10 @@
-#ifndef _STM32OTA_H_
-#define _STM32OTA_H_
+#pragma once
 
 #include <Arduino.h>
-//#include <ESP8266WiFi.h>
 #include <WiFiClient.h>
-//#include <ESP8266HTTPClient.h>
-//#include <SoftwareSerial.h>
+#include <HTTPClient.h>
+
+#include <SPIFFS.h>
 #include <FS.h>
 
 #define STERR         "ERROR"
@@ -53,6 +52,7 @@ class stm32ota
     String otaUpdate(String File_Url);
     void FlashMode();
     void RunMode();
+    void ConfigPins(int _NRST, int _BOOT0, int _LED);
     String conect();
     char chipVersion();
     String binfilename();
@@ -62,5 +62,3 @@ class stm32ota
     boolean EraseChip();
     String stm32Read(unsigned long rdaddress, unsigned char rdlen);
 };
-
-#endif
